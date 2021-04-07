@@ -1,0 +1,46 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+skinparam style strictuml
+actor Пользователь as User
+activate User
+
+boundary "Визуальный\nинтерфейс" as VI
+activate VI
+
+boundary "Клиентское\nприложение" as CApp
+activate CApp
+
+boundary Сервер as Server
+activate Server
+
+database "База данных" as BD
+activate BD
+
+User -> VI: Переход на\nстраницу мероприятий
+VI -> CApp: Получение\nсписка мероприятий
+CApp -> Server: Запрос на получение\nсписка мероприятий\n(токен авторизации)
+Server -> Server: Проверка валидности\nтокена в объекте\nсессии
+
+alt Аутентификация
+
+    Server -> BD: Получение пользователя
+    BD -> Server: Пользователь
+
+    Server -> BD: Получение списка мероприятий
+    BD -> Server: Список мероприятий
+    Server -> Server: Сортировка списка мероприятий
+    note left: Сортировка по дате создания,\nпервыми выводятся мероприятия,\nв которых пользователь принимает участие
+
+else Не авторизован
+
+    Server -> BD: Получение списка мероприятий
+    BD -> Server: Список мероприятий
+    Server -> Server: Сортировка списка мероприятий по дате создания
+
+end
+
+Server ->  CApp: Ответ (200,\n"OK", Список мероприятий)
+CApp -> VI: Отобразить\nкарточки мероприятий
+
+@enduml

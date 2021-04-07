@@ -1,0 +1,56 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+skinparam style strictuml
+actor Участник as User
+activate User
+
+boundary "Визуальный\nинтерфейс" as VI
+activate VI
+
+boundary "Клиентское\nприложение" as CApp
+activate CApp
+
+boundary Сервер as Server
+activate Server
+
+database "База данных" as BD
+activate BD
+
+User -> VI: Нажатие кнопки\n"Записаться на мероприятие"
+VI -> CApp: Записаться на мероприятие
+CApp -> Server: Запрос на запись\nпользователя на\nмероприятия\n(токен авторизации)
+
+Server -> Server: Проверка валидности\nтокена в объекте\nсессии
+
+alt Аутентификация
+
+    Server -> BD: Получение пользователя
+    BD -> Server: Нахождение пользователя
+    Server -> BD: Нахождение связи между\nпользователем и мероприятием
+    BD -> Server: Объект связи
+
+    alt Проверка связи
+
+        Server -> BD: Создание связи между\nпользователем и мероприятием
+        BD -> Server: Успешное создание связи
+
+        Server -> CApp: Ответ (200, "ОК")
+        CApp -> VI: Отобразить сообщение\n"Вы успешно\nподписались на мероприятие"
+
+    else Связь есть
+
+        Server -> CApp: Ответ (401, "Already registered")
+        CApp -> VI: Отобразить сообщение\n"Вы уже подписаны на мероприятие"
+
+    end
+
+else Прав нет
+
+   Server ->  CApp: Ответ (401,\n"Неавторизован")
+   CApp -> VI: Отобразить заглушку\n"Отказано в доступе"
+   CApp -> VI: Отобразить страницу\n"Авторизация"
+
+end
+
+@enduml

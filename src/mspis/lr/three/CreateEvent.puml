@@ -1,0 +1,70 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+skinparam style strictuml
+actor Организатор as User
+activate User
+
+boundary "Визуальный\nинтерфейс" as VI
+activate VI
+
+boundary "Клиентское\nприложение" as CApp
+activate CApp
+
+entity Мероприятие as event
+
+boundary Сервер as Server
+activate Server
+
+database "База данных" as BD
+activate BD
+
+User -> VI: Открыть форму\nсоздания мероприятия
+VI -> CApp: Проверка\nправ на создание
+CApp -> Server: Запрос на проверку прав\n(токен авторизации)
+Server -> Server: Проверка валидности\nтокена в объекте\nсессии
+Server -> BD: Получение пользователя
+BD -> Server: Нахождение пользователя
+
+Server -> BD: Получение списка прав
+BD -> Server: Список прав пользователя
+
+Server -> Server: Поиск в списке прав\nпункта "Создание мероприятия"
+
+alt Права подтверждены
+
+    Server -> CApp: Ответ (200,"OK")
+
+    create event
+    CApp -> event: Создание объекта события
+    activate event
+    CApp -> VI: Отобразить форму\nсоздания мероприятия
+
+    loop если ответ сервера 200
+
+        loop если данные валидны
+            User -> VI: Ввод данных мероприятия
+            VI -> event: Данные мероприятия\n(название, описание,\nкартинки, возрастное\nограничение,адрес,\nвремя)
+
+            User -> VI: Нажатие кнопки "Отправить"
+            VI -> CApp: Создать мероприятие
+            CApp -> CApp: Проверка валидности данных
+        end
+        CApp -> VI: Отобразить процессе загрузки
+        CApp -> event: Получить объект
+        event -> CApp: Объект
+        CApp -> Server: Запрос на создание мероприятия
+        Server -> BD: Создать запись мероприятия
+
+    end
+
+    BD -> Server: Создано
+    Server -> CApp: Ответ (200, "ОК")
+    CApp -> VI: Отобразить сообщение\n"Событие создано"
+
+else Прав нет
+   Server ->  CApp: Ответ (403,\n"Нет прав доступа")
+   CApp -> VI: Отобразить заглушку\n"Отказано в доступе"
+end
+
+@enduml
